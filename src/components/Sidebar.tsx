@@ -2,67 +2,118 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logoutAction } from "@/actions/logout";
 import {
   LayoutDashboard,
+  MonitorPlay,
   Calculator,
-  FileText,
-  CreditCard,
-  Users,
+  Percent,
+  UserPlus,
+  MessageCircle,
   BookOpen,
+  ClipboardCheck,
+  GraduationCap,
   LogOut,
 } from "lucide-react";
-import { logoutAction } from "@/actions/logout";
 
+// Definisi Menu Sesuai Permintaan
 const menuItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Hitung TER", href: "/dashboard/ter", icon: Calculator },
-  { name: "E-Bupot 21", href: "/dashboard/ebupot21", icon: FileText },
-  { name: "Lapor SPT", href: "/dashboard/spt", icon: BookOpen },
-  { name: "E-Billing", href: "/dashboard/billing", icon: CreditCard },
-  { name: "Data User", href: "/dashboard/users", icon: Users }, // Khusus Admin
+  { name: "Beranda", href: "/dashboard", icon: LayoutDashboard },
+
+  // Section Header: Taxation
+  { type: "header", name: "Taxation" },
+
+  { name: "Simulasi CoreVTC", href: "/dashboard/simulasi", icon: MonitorPlay },
+  { name: "Perhitungan TER", href: "/dashboard/ter", icon: Calculator },
+  { name: "Kalkulator Pajak", href: "/dashboard/kalkulator", icon: Percent },
+  { name: "Pendaftaran Relawan", href: "/dashboard/relawan", icon: UserPlus },
+  {
+    name: "Tanya Agent VTC",
+    href: "/dashboard/tanya-agent",
+    icon: MessageCircle,
+  },
+  { name: "Materi Perpajakan", href: "/dashboard/materi", icon: BookOpen },
+  {
+    name: "Seleksi Relawan Pajak",
+    href: "/dashboard/seleksi",
+    icon: ClipboardCheck,
+  },
+  {
+    name: "Ruang Belajar Pajak",
+    href: "/dashboard/ruang-belajar",
+    icon: GraduationCap,
+  },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="w-64 bg-slate-900 h-screen text-white flex flex-col fixed left-0 top-0">
-      <div className="p-6 border-b border-slate-700">
-        <h2 className="text-xl font-bold text-yellow-400">VTC SYSTEM</h2>
-        <p className="text-xs text-slate-400">Tax Administration v2.0</p>
+    <aside className="w-64 bg-slate-900 h-screen text-white flex flex-col fixed left-0 top-0 overflow-y-auto border-r border-slate-800 z-50">
+      {/* Header / Brand */}
+      <div className="p-6 border-b border-slate-800">
+        <h1 className="text-xl font-bold text-yellow-500 tracking-wider">
+          COREVTC
+        </h1>
+        <p className="text-xs text-slate-400 mt-1 font-mono">SYSTEM V1.0</p>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        {menuItems.map((item) => {
+      {/* Navigation Menu */}
+      <nav className="flex-1 p-4 space-y-1">
+        {menuItems.map((item, index) => {
+          // Render Section Header (Taxation)
+          if (item.type === "header") {
+            return (
+              <div key={index} className="px-4 pt-6 pb-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  {item.name}
+                </p>
+              </div>
+            );
+          }
+
+          // Render Menu Item Biasa
           const isActive = pathname === item.href;
+          const Icon = item.icon; // Ambil komponen ikon
+
           return (
             <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              key={index}
+              href={item.href || "#"}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group ${
                 isActive
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
               }`}
             >
-              <item.icon size={20} />
-              <span className="font-medium">{item.name}</span>
+              {Icon && (
+                <Icon
+                  size={18}
+                  className={
+                    isActive
+                      ? "text-white"
+                      : "text-slate-400 group-hover:text-white"
+                  }
+                />
+              )}
+              <span className="text-sm font-medium">{item.name}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-700">
+      {/* Footer / Logout */}
+      <div className="p-4 border-t border-slate-800 mt-auto bg-slate-900">
         <form action={logoutAction}>
           <button
             type="submit"
-            className="flex items-center gap-3 px-4 py-3 w-full text-red-400 hover:bg-red-900/20 rounded-lg transition-colors text-left"
+            className="flex items-center gap-3 px-4 py-3 w-full text-red-400 hover:bg-red-900/10 hover:text-red-300 rounded-lg transition-colors text-left"
           >
-            <LogOut size={20} />
-            <span className="font-medium">Keluar</span>
+            <LogOut size={18} />
+            <span className="text-sm font-medium">Keluar</span>
           </button>
         </form>
       </div>
-    </div>
+    </aside>
   );
 }

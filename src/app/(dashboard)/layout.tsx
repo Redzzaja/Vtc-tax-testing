@@ -7,34 +7,34 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Cek apakah user sudah login (cek cookie)
   const cookieStore = await cookies();
   const session = cookieStore.get("user_session");
 
   if (!session) {
-    redirect("/"); // Tendang balik ke login jika tidak ada sesi
+    redirect("/");
   }
 
   const user = JSON.parse(session.value);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar Statis */}
+      {/* 1. Sidebar Tetap di Kiri */}
       <Sidebar />
 
-      {/* Konten Dinamis */}
-      <div className="flex-1 ml-64">
-        {/* Header Sederhana */}
-        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-8 sticky top-0 z-10">
+      {/* 2. Konten Utama digeser ke Kanan (ml-64) agar tidak tertutup Sidebar */}
+      <div className="flex-1 ml-64 transition-all duration-300">
+        {/* Header Atas */}
+        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-8 sticky top-0 z-40">
           <h1 className="text-lg font-semibold text-gray-700">
-            Selamat Datang, <span className="text-blue-600">{user.name}</span>
+            Selamat Datang,{" "}
+            <span className="text-blue-600 font-bold">{user.name}</span>
           </h1>
-          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold uppercase">
+          <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase border border-blue-100">
             {user.role}
           </div>
         </header>
 
-        {/* Isi Halaman */}
+        {/* Area Konten Halaman */}
         <main className="p-8">{children}</main>
       </div>
     </div>
