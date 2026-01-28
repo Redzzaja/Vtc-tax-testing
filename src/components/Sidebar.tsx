@@ -40,7 +40,7 @@ const menuItems = [
   },
   {
     name: "Ruang Belajar Pajak",
-    href: "/dashboard/ruang-belajar",
+    href: "/dashboard/belajar",
     icon: GraduationCap,
   },
 ];
