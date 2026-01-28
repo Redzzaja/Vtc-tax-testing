@@ -1,6 +1,14 @@
+import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export default function RootPage() {
-  // Redirect root "/" langsung ke dashboard (atau login jika belum auth)
-  redirect("/dashboard");
+export default async function RootPage() {
+  // 1. Cek apakah ada session valid
+  const session = await getSession();
+
+  // 2. Arahkan sesuai status login
+  if (session) {
+    redirect("/dashboard");
+  } else {
+    redirect("/login");
+  }
 }

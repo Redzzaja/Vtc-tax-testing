@@ -1,13 +1,12 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { logout } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 export async function logoutAction() {
-  // Hapus cookie sesi
-  const cookieStore = await cookies();
-  cookieStore.delete("user_session");
+  // 1. Hapus Cookie
+  await logout();
 
-  // Arahkan kembali ke halaman login
-  redirect("/");
+  // 2. Redirect Tegas ke Login
+  redirect("/login");
 }

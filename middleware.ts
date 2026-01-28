@@ -1,49 +1,30 @@
-// src/middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose"; // Import langsung jose di sini
-
-const SECRET_KEY = "ini-rahasia-banget-jangan-disebar";
-const key = new TextEncoder().encode(SECRET_KEY);
+import { getSession } from "@/lib/auth"; // Pastikan path ini benar
 
 export async function middleware(request: NextRequest) {
-  // 1. Ambil cookie langsung dari Request (bukan lewat fungsi getSession)
-  const sessionToken = request.cookies.get("session_token")?.value;
+  // Ambil session (otomatis cek cookie 'session_token')
+  const session = await getSession();
+  const { pathname } = request.nextUrl;
 
-  // 2. Verifikasi Token Manual
-  let session = null;
-  if (sessionToken) {
-    try {
-      const { payload } = await jwtVerify(sessionToken, key, {
-        algorithms: ["HS256"],
-      });
-      session = payload;
-    } catch (error) {
-      // Token invalid/expired
-    }
+  // Halaman Auth (Login/Register)
+  const isAuthPage =
+    pathname.startsWith("/login") || pathname.startsWith("/register");
+
+  // Halaman Dashboard (Protected)
+  const isDashboardPage = pathname.startsWith("/dashboard");
+
+  // SKENARIO 1: Sudah Login, tapi buka halaman Login -> Lempar ke Dashboard
+  if (session && isAuthPage) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  const publicRoutes = ["/login", "/register"];
-  if (publicRoutes.includes(request.nextUrl.pathname)) {
-    // Kalau sudah login, lempar ke dashboard
-    if (session) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-    return NextResponse.next();
-  }
-  // --- Logic Redirect Sama Seperti Sebelumnya ---
-
-  if (request.nextUrl.pathname === "/login") {
-    if (session) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-    return NextResponse.next();
-  }
-
-  if (!session) {
+  // SKENARIO 2: Belum Login, tapi buka Dashboard -> Lempar ke Login
+  if (!session && isDashboardPage) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // Lanjut normal
   return NextResponse.next();
 }
 

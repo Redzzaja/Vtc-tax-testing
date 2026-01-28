@@ -1,16 +1,17 @@
 "use server";
 
-import { getSheetData } from "@/lib/google";
+import { db } from "@/db"; // Koneksi Neon
+import { users } from "@/db/schema"; // Schema Neon
+import { eq } from "drizzle-orm";
+import { createSession } from "@/lib/auth"; // Import lib auth yang baru kita perbaiki
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 
-// Definisikan tipe untuk return value
-type AuthState = {
+// Tipe state untuk useActionState
+export type AuthState = {
   success: boolean;
   message: string;
 };
 
-// PERBAIKAN: Tambahkan parameter `prevState` di argumen pertama
 export async function loginAction(
   prevState: AuthState,
   formData: FormData
@@ -18,27 +19,67 @@ export async function loginAction(
   const username = formData.get("username") as string;
   const password = formData.get("password") as string;
 
-  // 1. Ambil data dari Sheet "User"
-  const users = await getSheetData("User!A2:D");
+  try {
+    // 1. Cari User di Database Neon
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
 
-  // 2. Cari User yang cocok
-  const user = users.find((row) => row[0] === username && row[1] === password);
+    // 2. Validasi User
+    if (!user) {
+      return { success: false, message: "Username tidak ditemukan!" };
+    }
 
-  if (!user) {
-    // Return object state, bukan redirect langsung jika gagal
-    return { success: false, message: "Username atau Password salah!" };
+    // 3. Cek Password (Manual compare karena data seed masih plain text)
+    if (user.password !== password) {
+      return { success: false, message: "Password salah!" };
+    }
+
+    // 4. Buat Session
+    // Sekarang 'fullName' akan diterima karena tipe di src/lib/auth.ts sudah diperbaiki
+    await createSession({
+      userId: user.id,
+      username: user.username,
+      fullName: user.fullName || "User", // Menggunakan fullName
+      role: user.role || "user",
+    });
+  } catch (error) {
+    console.error("Login Error:", error);
+    return { success: false, message: "Terjadi kesalahan server." };
   }
 
-  // 3. Simpan sesi
-  const userData = { username: user[0], name: user[2], role: user[3] };
-
-  const cookieStore = await cookies();
-  cookieStore.set("user_session", JSON.stringify(userData), {
-    secure: process.env.NODE_ENV === "production",
-    httpOnly: true,
-    maxAge: 60 * 60 * 24, // 1 Hari
-  });
-
-  // 4. Redirect (Ini akan melempar error "NEXT_REDIRECT" yang normal, biarkan saja)
+  // 5. Redirect ke Dashboard
   redirect("/dashboard");
+}
+
+// Tambahkan Register Action agar form register juga jalan
+export async function registerAction(
+  prevState: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const fullName = formData.get("fullName") as string;
+  const username = formData.get("username") as string;
+  const password = formData.get("password") as string;
+
+  try {
+    // Cek Duplikat
+    const [existing] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
+    if (existing) return { success: false, message: "Username sudah dipakai!" };
+
+    // Insert Data
+    await db.insert(users).values({
+      fullName,
+      username,
+      password,
+      role: "user",
+    });
+  } catch (error) {
+    return { success: false, message: "Gagal daftar." };
+  }
+
+  redirect("/login");
 }

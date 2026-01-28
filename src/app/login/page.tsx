@@ -1,75 +1,76 @@
-import { db } from "@/db"; // Sesuaikan path
-import { users } from "@/db/schema"; // Sesuaikan path
-import { eq } from "drizzle-orm";
-import { createSession } from "@/lib/auth"; // Import dari langkah 2
-import { redirect } from "next/navigation";
+"use client";
+
+import { useActionState } from "react";
+import { loginAction } from "@/actions/auth"; // Import action baru
+import Link from "next/link";
+
+const initialState = {
+  success: false,
+  message: "",
+};
 
 export default function LoginPage() {
-  // Server Action (Jalan di server)
-  async function handleLogin(formData: FormData) {
-    "use server";
-
-    const username = formData.get("username") as string;
-    const password = formData.get("password") as string;
-
-    // 1. Cari User di Database
-    // Ini pakai tabel 'users' yang SUDAH ADA, tidak perlu ubah schema
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, username));
-
-    // 2. Cek Validasi
-    if (!user) {
-      redirect("/login?error=User tidak ditemukan");
-    }
-
-    // 3. Cek Password
-    // Karena data seed plain text, kita bandingkan langsung.
-    // Nanti kalau mau secure, user bisa ganti pass jadi hash bcrypt.
-    if (user.password !== password) {
-      redirect("/login?error=Password salah");
-    }
-
-    // 4. Buat Session
-    await createSession({
-      userId: user.id,
-      username: user.username,
-      role: user.role,
-      fullName: user.fullName,
-    });
-
-    // 5. Sukses
-    redirect("/");
-  }
+  const [state, formAction, isPending] = useActionState(
+    loginAction,
+    initialState
+  );
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm p-6 bg-white rounded-lg shadow-md border">
-        <h1 className="text-xl font-bold mb-4 text-center">Login VTC System</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h1 className="text-2xl font-bold text-center mb-2 text-gray-800">
+          LOGIN VTC
+        </h1>
+        <p className="text-center text-gray-500 mb-6 text-sm">
+          Masuk ke sistem perpajakan
+        </p>
 
-        <form action={handleLogin} className="flex flex-col gap-4">
-          <input
-            name="username"
-            type="text"
-            placeholder="Username (ex: admin)"
-            className="border p-2 rounded"
-            required
-          />
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            className="border p-2 rounded"
-            required
-          />
+        <form action={formAction} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Username
+            </label>
+            <input
+              name="username"
+              type="text"
+              required
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <input
+              name="password"
+              type="password"
+              required
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
+
+          {state?.message && (
+            <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded border border-red-200">
+              {state.message}
+            </div>
+          )}
+
           <button
             type="submit"
-            className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+            disabled={isPending}
+            className="w-full bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800 disabled:opacity-50 font-medium"
           >
-            Masuk
+            {isPending ? "Memproses..." : "Masuk"}
           </button>
         </form>
+
+        <p className="text-center mt-4 text-sm text-gray-600">
+          Belum punya akun?{" "}
+          <Link href="/register" className="text-blue-600 hover:underline">
+            Daftar disini
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -1,52 +1,50 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const SECRET_KEY = "ini-rahasia-banget-jangan-disebar";
+const SECRET_KEY = process.env.SESSION_SECRET || "rahasia-dapur-vtc-2026";
 const key = new TextEncoder().encode(SECRET_KEY);
 
-// 1. Definisikan tipe data Session agar TypeScript paham
-export interface UserSession {
+// PERBAIKAN: Ganti 'name' jadi 'fullName'
+export type SessionPayload = {
   userId: number;
   username: string;
+  fullName: string; // <-- Ini kuncinya
   role: string;
-  fullName: string;
-  // Properti standar JWT (opsional)
-  iat?: number;
-  exp?: number;
-}
+};
 
-export async function createSession(payload: any) {
+export async function createSession(payload: SessionPayload) {
   const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("24h")
     .sign(key);
 
-  (await cookies()).set("session_token", token, {
+  const cookieStore = await cookies();
+  cookieStore.set("session_token", token, {
+    // Konsisten pakai 'session_token'
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
     maxAge: 60 * 60 * 24,
+    path: "/",
   });
 }
 
-// 2. Ubah return type menjadi Promise<UserSession | null>
-export async function getSession(): Promise<UserSession | null> {
-  const session = (await cookies()).get("session_token")?.value;
+export async function getSession() {
+  const cookieStore = await cookies();
+  const session = cookieStore.get("session_token")?.value;
   if (!session) return null;
 
   try {
     const { payload } = await jwtVerify(session, key, {
       algorithms: ["HS256"],
     });
-    // 3. Paksa TypeScript menganggap payload ini sebagai UserSession
-    return payload as unknown as UserSession;
+    return payload as SessionPayload;
   } catch (error) {
     return null;
   }
 }
 
 export async function logout() {
-  (await cookies()).delete("session_token");
+  const cookieStore = await cookies();
+  cookieStore.delete("session_token");
 }
