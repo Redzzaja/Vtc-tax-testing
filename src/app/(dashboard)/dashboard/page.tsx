@@ -8,11 +8,12 @@ import {
   Users,
   TrendingUp,
   ArrowUpRight,
-  ArrowDownRight,
   Activity,
   Calendar,
-} from "lucide-react";
+} from "lucide-react"; //
 import Link from "next/link";
+// Import komponen Loading agar bisa ditampilkan saat fetching data di client-side
+import Loading from "../loading";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
@@ -27,14 +28,15 @@ export default function DashboardPage() {
       setIsLoading(false);
     };
     loadData();
-  }, []);
+  }, []); //
 
   if (isLoading) {
-    // Return null agar loading.tsx (skeleton) yang menghandle tampilannya
-    return null;
+    // PERBAIKAN: Return component Loading, bukan null
+    return <Loading />;
   }
 
   return (
+    // Class 'animate-in' akan bekerja jika plugin tailwindcss-animate sudah diinstall
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* 1. Welcome Banner */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">

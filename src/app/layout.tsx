@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css"; // <--- JANGAN HAPUS BARIS INI
+import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "VTC System",
   description: "Aplikasi Perpajakan",
+  // TAMBAHKAN INI: Definisi explicit untuk favicon
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
