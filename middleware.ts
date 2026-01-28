@@ -1,36 +1,52 @@
+// src/middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose"; // Import langsung jose di sini
 
-export function middleware(request: NextRequest) {
-  // Ambil cookie sesi user
-  const session = request.cookies.get("user_session");
+const SECRET_KEY = "ini-rahasia-banget-jangan-disebar";
+const key = new TextEncoder().encode(SECRET_KEY);
 
-  // Cek halaman yang sedang diakses
-  const { pathname } = request.nextUrl;
+export async function middleware(request: NextRequest) {
+  // 1. Ambil cookie langsung dari Request (bukan lewat fungsi getSession)
+  const sessionToken = request.cookies.get("session_token")?.value;
 
-  // ATURAN 1: Jika user belum login tapi mau masuk Dashboard -> Tendang ke Login
-  if (pathname.startsWith("/dashboard") && !session) {
-    return NextResponse.redirect(new URL("/", request.url));
+  // 2. Verifikasi Token Manual
+  let session = null;
+  if (sessionToken) {
+    try {
+      const { payload } = await jwtVerify(sessionToken, key, {
+        algorithms: ["HS256"],
+      });
+      session = payload;
+    } catch (error) {
+      // Token invalid/expired
+    }
   }
 
-  // ATURAN 2: Jika user SUDAH login tapi mau masuk halaman Login -> Arahkan ke Dashboard
-  if (pathname === "/" && session) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  const publicRoutes = ["/login", "/register"];
+  if (publicRoutes.includes(request.nextUrl.pathname)) {
+    // Kalau sudah login, lempar ke dashboard
+    if (session) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    return NextResponse.next();
+  }
+  // --- Logic Redirect Sama Seperti Sebelumnya ---
+
+  if (request.nextUrl.pathname === "/login") {
+    if (session) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (!session) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
 }
 
-// Tentukan halaman mana saja yang dijaga oleh Middleware
 export const config = {
-  matcher: [
-    /*
-     * Match semua request path kecuali:
-     * 1. /api (API routes)
-     * 2. /_next (Next.js internals)
-     * 3. /static (file statis)
-     * 4. favicon.ico, sitemap.xml (file publik)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
