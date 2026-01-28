@@ -7,10 +7,8 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "VTC System",
   description: "Aplikasi Perpajakan",
-  // TAMBAHKAN INI: Definisi explicit untuk favicon
-  icons: {
-    icon: "/favicon.ico",
-  },
+  // HAPUS bagian 'icons' di sini.
+  // Next.js akan otomatis mencari file 'src/app/favicon.ico'
 };
 
 export default function RootLayout({
